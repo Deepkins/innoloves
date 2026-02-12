@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Иннополис — Валентинка</title>
+<title>С любовью из Инно</title>
 
 <style>
 
@@ -395,41 +395,69 @@ function animate(){
 
 animate()
 
+
 download.onclick=function(){
 
   const canvas=document.getElementById("canvas")
   const ctx=canvas.getContext("2d")
 
-  const g=ctx.createLinearGradient(0,0,0,1350)
+  const W=canvas.width
+  const H=canvas.height
+
+  // фон
+  const g=ctx.createLinearGradient(0,0,0,H)
   g.addColorStop(0,"#ffd6e0")
   g.addColorStop(1,"#ffe7d6")
 
   ctx.fillStyle=g
-  ctx.fillRect(0,0,1080,1350)
+  ctx.fillRect(0,0,W,H)
 
   ctx.fillStyle="#2b2b2b"
   ctx.textAlign="center"
-
-  ctx.font="42px sans-serif"
-  ctx.fillText("Иннополис",540,200)
+  ctx.textBaseline="middle"
 
   ctx.font="bold 108px sans-serif"
 
-  drawText(ctx,messages[selected],540,650,900,120)
+  // фиксированные позиции
+  const logoWidth=256
+  const logoHeight=logoWidth/(logoImg.naturalWidth/logoImg.naturalHeight)
 
-  drawHeart(ctx,540,1050)
+  const logoY=180
+  const heartY=1050
+
+  // логотип всегда фиксирован
+  ctx.drawImage(
+    logoImg,
+    W/2-logoWidth/2,
+    logoY,
+    logoWidth,
+    logoHeight
+  )
+
+  // строки текста
+  const lines=getTextLines(ctx,messages[selected],900)
+
+  // центр области между логотипом и сердцем
+  const top=logoY+logoHeight
+  const bottom=heartY
+
+  const OPTICAL_OFFSET = 0.05
+  const centerY=(top+bottom)/2 - (bottom-top)*OPTICAL_OFFSET
+
+  drawTextBlockCentered(ctx,lines,W/2,centerY,120)
+
+  // сердце всегда фиксировано
+  drawHeart(ctx,W/2,heartY)
 
   const url=canvas.toDataURL("image/jpeg",0.95)
 
   const a=document.createElement("a")
   a.href=url
   a.download="valentine.jpg"
-
-  document.body.appendChild(a)
   a.click()
-  document.body.removeChild(a)
 
 }
+
 
 function drawText(ctx,text,x,y,maxWidth,lineHeight){
 
@@ -483,53 +511,69 @@ function drawHeart(ctx,x,y){
 }
 
 // переопределяем обработчик клика, чтобы центрировать текст и рисовать SVG‑логотип
+
 download.onclick=function(){
 
   const canvas=document.getElementById("canvas")
   const ctx=canvas.getContext("2d")
 
-  const g=ctx.createLinearGradient(0,0,0,1350)
+  const W=canvas.width
+  const H=canvas.height
+
+  // фон
+  const g=ctx.createLinearGradient(0,0,0,H)
   g.addColorStop(0,"#ffd6e0")
   g.addColorStop(1,"#ffe7d6")
 
   ctx.fillStyle=g
-  ctx.fillRect(0,0,1080,1350)
+  ctx.fillRect(0,0,W,H)
 
   ctx.fillStyle="#2b2b2b"
   ctx.textAlign="center"
-
-  // рисуем SVG‑логотип вместо текстовой надписи, сохраняя пропорции
-  const baseLogoWidth=256
-  const logoY=180
-
-  if(logoImg && logoImg.complete && logoImg.naturalWidth && logoImg.naturalHeight){
-    const ratio=logoImg.naturalWidth/logoImg.naturalHeight
-    const logoWidth=baseLogoWidth
-    const logoHeight=logoWidth/ratio
-    const logoX=540-logoWidth/2
-    ctx.drawImage(logoImg,logoX,logoY,logoWidth,logoHeight)
-  }else if(logoImg){
-    // если логотип ещё не загрузился, дождёмся onload и перезапустим скачивание
-    logoImg.onload=()=>download.click()
-  }
+  ctx.textBaseline="middle"
 
   ctx.font="bold 108px sans-serif"
 
-  drawTextCentered(ctx,messages[selected],540,650,900,120)
+  // фиксированные позиции
+  const logoWidth=256
+  const logoHeight=logoWidth/(logoImg.naturalWidth/logoImg.naturalHeight)
 
-  drawHeart(ctx,540,1050)
+  const logoY=180
+  const heartY=1050
+
+  // логотип всегда фиксирован
+  ctx.drawImage(
+    logoImg,
+    W/2-logoWidth/2,
+    logoY,
+    logoWidth,
+    logoHeight
+  )
+
+  // строки текста
+  const lines=getTextLines(ctx,messages[selected],900)
+
+  // центр области между логотипом и сердцем
+  const top=logoY+logoHeight
+  const bottom=heartY
+
+  const OPTICAL_OFFSET = 0.05
+  const centerY=(top+bottom)/2 - (bottom-top)*OPTICAL_OFFSET
+
+  drawTextBlockCentered(ctx,lines,W/2,centerY,120)
+
+  // сердце всегда фиксировано
+  drawHeart(ctx,W/2,heartY)
 
   const url=canvas.toDataURL("image/jpeg",0.95)
 
   const a=document.createElement("a")
   a.href=url
   a.download="valentine.jpg"
-
-  document.body.appendChild(a)
   a.click()
-  document.body.removeChild(a)
 
 }
+
 
 function drawTextCentered(ctx,text,x,centerY,maxWidth,lineHeight){
 
@@ -565,6 +609,77 @@ function drawTextCentered(ctx,text,x,centerY,maxWidth,lineHeight){
     ctx.fillText(l,x,y)
     y+=lineHeight
   })
+}
+
+
+function getTextLines(ctx,text,maxWidth){
+
+  const words=text.split(" ")
+  const lines=[]
+  let line=""
+
+  words.forEach(word=>{
+
+    const test=line+word+" "
+
+    if(ctx.measureText(test).width>maxWidth){
+      lines.push(line)
+      line=word+" "
+    }else{
+      line=test
+    }
+
+  })
+
+  if(line) lines.push(line)
+
+  return lines
+
+}
+
+function drawTextBlockCentered(ctx,lines,x,centerY,lineHeight){
+
+  const totalHeight=lines.length*lineHeight
+
+  let y=centerY-totalHeight/2+lineHeight/2
+
+  lines.forEach(line=>{
+    ctx.fillText(line,x,y)
+    y+=lineHeight
+  })
+
+}
+
+function drawHeart(ctx,x,y){
+
+  const size=26
+
+  const shape=[
+  [0,1,0,1,0],
+  [1,1,1,1,1],
+  [1,1,1,1,1],
+  [0,1,1,1,0],
+  [0,0,1,0,0]
+  ]
+
+  const heartSize=shape.length*size
+  const offset=heartSize/2
+
+  ctx.fillStyle="#ff4d6d"
+
+  shape.forEach((row,yy)=>{
+    row.forEach((col,xx)=>{
+      if(col){
+        ctx.fillRect(
+          x-offset+xx*size,
+          y-offset+yy*size,
+          size,
+          size
+        )
+      }
+    })
+  })
+
 }
 
 </script>
