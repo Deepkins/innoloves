@@ -1,1 +1,483 @@
-#
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Иннополис — Валентинка</title>
+
+<style>
+
+:root{
+  --pink:#ffd6e0;
+  --peach:#ffe7d6;
+  --accent:#ff4d6d;
+  --text:#2b2b2b;
+}
+
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  height:100vh;
+  background:linear-gradient(120deg,var(--pink),var(--peach),var(--pink));
+  background-size:200% 200%;
+  animation:bgShift 18s ease infinite;
+}
+
+@keyframes bgShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+
+.title{
+  font-size:22px;
+  margin-bottom:60px;
+  color:var(--text);
+  opacity:0.8;
+}
+
+.wrapper{
+  position:relative;
+  height:120px;
+  width:90vw;
+  max-width:640px;
+  overflow:hidden;
+  border-radius:28px;
+  background:rgba(255,255,255,0.55);
+  backdrop-filter:blur(12px);
+}
+
+.fade-top,
+.fade-bottom{
+  position:absolute;
+  width:100%;
+  height:40%;
+  pointer-events:none;
+}
+
+.fade-top{
+  top:0;
+  background:linear-gradient(to bottom,rgba(255,255,255,0.95),transparent);
+}
+
+.fade-bottom{
+  bottom:0;
+  background:linear-gradient(to top,rgba(255,255,255,0.95),transparent);
+}
+
+.center-line{
+  position:absolute;
+  width:100%;
+  height:120px;
+  border-top:1px solid rgba(0,0,0,0.08);
+  border-bottom:1px solid rgba(0,0,0,0.08);
+}
+
+.slot{
+  position:absolute;
+  width:100%;
+}
+
+.item{
+  height:120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:40px;
+  font-weight:500;
+  color:var(--text);
+  text-align:center;
+  padding:0 40px;
+  box-sizing:border-box;
+}
+
+button{
+  margin-top:50px;
+  padding:16px 36px;
+  font-size:18px;
+  border-radius:999px;
+  border:none;
+  background:var(--accent);
+  color:white;
+  box-shadow:0 6px 18px rgba(255,77,109,0.28);
+  cursor:pointer;
+  transition:transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+
+button:hover{
+  transform:translateY(-2px) scale(1.02);
+  box-shadow:0 9px 24px rgba(255,77,109,0.38);
+  opacity:0.96;
+}
+
+#download{
+  margin-top:32px;
+  color:var(--accent);
+  cursor:pointer;
+  font-size:16px;
+  text-decoration:underline;
+   text-underline-offset:4px;
+   text-decoration-thickness:1px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.25s ease;
+}
+
+@media (max-width:600px){
+  body{
+    justify-content:flex-start;
+    padding-top:60px;
+  }
+
+  .title{
+    font-size:18px;
+    margin-bottom:40px;
+    text-align:center;
+    padding:0 16px;
+  }
+
+  .item{
+    font-size:28px;
+    padding:0 20px;
+  }
+
+  button{
+    width:90vw;
+    max-width:340px;
+    font-size:16px;
+    padding:14px 24px;
+  }
+
+  #download{
+    font-size:14px;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<div class="title">
+  <img src="https://raw.githubusercontent.com/Deepkins/innoloves/main/logo/Inno_logo.svg" alt="Иннополис" style="height:32px;">
+</div>
+
+<div class="wrapper" id="wrapper">
+<div class="fade-top"></div>
+<div class="fade-bottom"></div>
+<div class="center-line"></div>
+<div class="slot" id="slot"></div>
+</div>
+
+<button onclick="spin()">Поймай свою валентинку</button>
+
+<div id="download">Скачать валентинку</div>
+
+<canvas id="canvas" width="1080" height="1350" style="display:none;"></canvas>
+<!-- SVG логотип для открытки (загружается из JS с CORS) -->
+<img
+  id="logo"
+  data-src="https://raw.githubusercontent.com/Deepkins/innoloves/main/logo/Inno_logo.svg"
+  alt="Иннополис"
+  style="display:none;"
+/>
+
+<script>
+
+const messages=[
+"Ты — чьё-то самое тёплое чувство",
+"Сегодня твой день",
+"Ты важнее, чем думаешь",
+"Кто-то улыбается, думая о тебе",
+"Пусть этот день будет мягким",
+"Ты делаешь мир лучше",
+"Любовь рядом",
+"Ты не один",
+"Тепло внутри тебя",
+"Сегодня особенный день",
+"Кто-то тебя ценит",
+"Ты свет",
+"Пусть сбудется что-то хорошее",
+"Этот момент — для тебя",
+"Ты достоин счастья",
+"Сегодня всё возможно",
+"Ты важен",
+"Ты причина чьей-то радости",
+"Пусть будет спокойно",
+"С любовью, Иннополис"
+]
+
+const ITEM_HEIGHT=120
+const slot=document.getElementById("slot")
+const wrapper=document.getElementById("wrapper")
+const download=document.getElementById("download")
+const logoImg=document.getElementById("logo")
+
+// корректно загружаем SVG с GitHub с CORS, чтобы toDataURL работал
+if(logoImg){
+  logoImg.crossOrigin="anonymous"
+  const src=logoImg.getAttribute("data-src")
+  if(src){
+    logoImg.src=src
+  }
+}
+
+let position=0
+let target=0
+let state="idle"
+let selected=0
+
+const LOOP_HEIGHT=messages.length*ITEM_HEIGHT
+let idlePhase=0
+
+// build slot
+const extended=[...messages,...messages,...messages]
+
+extended.forEach(text=>{
+
+  const div=document.createElement("div")
+  div.className="item"
+  div.innerText=text
+  slot.appendChild(div)
+
+})
+
+function spin(){
+
+  download.style.opacity=0
+  download.style.pointerEvents="none"
+
+  selected=Math.floor(Math.random()*messages.length)
+
+  const currentIndex=Math.floor(position/ITEM_HEIGHT)
+  const baseCycle=Math.floor(currentIndex/messages.length)*messages.length
+
+  target=(baseCycle+messages.length+selected)*ITEM_HEIGHT
+
+  state="spinning"
+
+}
+
+function animate(){
+
+  if(state==="idle"){
+    idlePhase+=0.015
+    const baseSpeed=0.5
+    const variation=0.2*Math.sin(idlePhase)
+    position+=baseSpeed+variation
+  }
+
+  if(state==="spinning"){
+
+    const diff=target-position
+
+    position+=diff*0.08
+
+    if(Math.abs(diff)<0.1){
+
+      position=target
+      state="stopped"
+      download.style.opacity=1
+      download.style.pointerEvents="auto"
+
+    }
+
+  }
+
+  // CRITICAL infinite normalization
+  if(position>=LOOP_HEIGHT*2){
+
+    position-=LOOP_HEIGHT
+    target-=LOOP_HEIGHT
+
+  }
+
+  const translateY=wrapper.clientHeight/2-position-ITEM_HEIGHT/2-2
+
+  slot.style.transform=`translateY(${translateY}px)`
+
+  requestAnimationFrame(animate)
+
+}
+
+animate()
+
+download.onclick=function(){
+
+  const canvas=document.getElementById("canvas")
+  const ctx=canvas.getContext("2d")
+
+  const g=ctx.createLinearGradient(0,0,0,1350)
+  g.addColorStop(0,"#ffd6e0")
+  g.addColorStop(1,"#ffe7d6")
+
+  ctx.fillStyle=g
+  ctx.fillRect(0,0,1080,1350)
+
+  ctx.fillStyle="#2b2b2b"
+  ctx.textAlign="center"
+
+  ctx.font="42px sans-serif"
+  ctx.fillText("Иннополис",540,200)
+
+  ctx.font="bold 108px sans-serif"
+
+  drawText(ctx,messages[selected],540,650,900,120)
+
+  drawHeart(ctx,540,1050)
+
+  const url=canvas.toDataURL("image/jpeg",0.95)
+
+  const a=document.createElement("a")
+  a.href=url
+  a.download="valentine.jpg"
+
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
+}
+
+function drawText(ctx,text,x,y,maxWidth,lineHeight){
+
+  const words=text.split(" ")
+  let line=""
+
+  words.forEach(word=>{
+
+    const test=line+word+" "
+
+    if(ctx.measureText(test).width>maxWidth){
+
+      ctx.fillText(line,x,y)
+      line=word+" "
+      y+=lineHeight
+
+    }else{
+
+      line=test
+
+    }
+
+  })
+
+  ctx.fillText(line,x,y)
+
+}
+
+function drawHeart(ctx,x,y){
+
+  const size=26
+
+  const shape=[
+  [0,1,0,1,0],
+  [1,1,1,1,1],
+  [1,1,1,1,1],
+  [0,1,1,1,0],
+  [0,0,1,0,0]
+  ]
+
+  ctx.fillStyle="#ff4d6d"
+
+  shape.forEach((row,yy)=>{
+    row.forEach((col,xx)=>{
+      if(col){
+        ctx.fillRect(x+(xx-2)*size,y+(yy-2)*size,size,size)
+      }
+    })
+  })
+
+}
+
+// переопределяем обработчик клика, чтобы центрировать текст и рисовать SVG‑логотип
+download.onclick=function(){
+
+  const canvas=document.getElementById("canvas")
+  const ctx=canvas.getContext("2d")
+
+  const g=ctx.createLinearGradient(0,0,0,1350)
+  g.addColorStop(0,"#ffd6e0")
+  g.addColorStop(1,"#ffe7d6")
+
+  ctx.fillStyle=g
+  ctx.fillRect(0,0,1080,1350)
+
+  ctx.fillStyle="#2b2b2b"
+  ctx.textAlign="center"
+
+  // рисуем SVG‑логотип вместо текстовой надписи, сохраняя пропорции
+  const baseLogoWidth=256
+  const logoY=180
+
+  if(logoImg && logoImg.complete && logoImg.naturalWidth && logoImg.naturalHeight){
+    const ratio=logoImg.naturalWidth/logoImg.naturalHeight
+    const logoWidth=baseLogoWidth
+    const logoHeight=logoWidth/ratio
+    const logoX=540-logoWidth/2
+    ctx.drawImage(logoImg,logoX,logoY,logoWidth,logoHeight)
+  }else if(logoImg){
+    // если логотип ещё не загрузился, дождёмся onload и перезапустим скачивание
+    logoImg.onload=()=>download.click()
+  }
+
+  ctx.font="bold 108px sans-serif"
+
+  drawTextCentered(ctx,messages[selected],540,650,900,120)
+
+  drawHeart(ctx,540,1050)
+
+  const url=canvas.toDataURL("image/jpeg",0.95)
+
+  const a=document.createElement("a")
+  a.href=url
+  a.download="valentine.jpg"
+
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+
+}
+
+function drawTextCentered(ctx,text,x,centerY,maxWidth,lineHeight){
+
+  const words=text.split(" ")
+  let line=""
+  const lines=[]
+
+  words.forEach(word=>{
+
+    const test=line+word+" "
+
+    if(ctx.measureText(test).width>maxWidth){
+
+      lines.push(line)
+      line=word+" "
+
+    }else{
+
+      line=test
+
+    }
+
+  })
+
+  if(line){
+    lines.push(line)
+  }
+
+  const totalHeight=(lines.length-1)*lineHeight
+  let y=centerY-totalHeight/2
+
+  lines.forEach(l=>{
+    ctx.fillText(l,x,y)
+    y+=lineHeight
+  })
+}
+
+</script>
+
+</body>
+</html>
